@@ -23,10 +23,15 @@ if __name__ == '__main__':
         # print(f"REQ: {message}")
         # result = np.sum(message)
         # socket.send_string(str(result))
-        src, message = socket.recv_multipart()
+        # src, message = socket.recv_multipart()
         # print(message)
+        # socket.send_multipart([
+        #     src,
+        #     str(worker_id).encode(),
+        #     message + message
+        # ])
+        message = socket.recv_multipart()[0]
         socket.send_multipart([
-            src,
             str(worker_id).encode(),
             message + message
         ])

@@ -12,6 +12,7 @@ if __name__ == '__main__':
 
     worker_id = random.randint(1, 10)
     print(f"Worker {worker_id}")
+    message_id = 0
 
     while True:
         message = socket.recv_multipart()[0]
@@ -19,4 +20,5 @@ if __name__ == '__main__':
             str(worker_id).encode(),
             message + message
         ])
-        print('Sending')
+        message_id += 1
+        print(f'Sending {message_id}')

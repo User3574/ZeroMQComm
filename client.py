@@ -12,7 +12,7 @@ if __name__ == '__main__':
     socket.connect("tcp://localhost:5559")
 
     # Send all requests
-    msg_count = 100000
+    msg_count = 100
     data = "A" * 10000
 
     msg_send = 0

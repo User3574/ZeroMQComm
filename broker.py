@@ -1,7 +1,3 @@
-# Simple request-reply broker
-#
-# Author: Lev Givon <lev(at)columbia(dot)edu>
-
 import zmq
 
 if __name__ == '__main__':

@@ -1,3 +1,5 @@
+import json
+
 import zmq
 
 
@@ -16,15 +18,18 @@ class Worker:
             id, message = self.socket.recv_multipart()
 
             # Decode
-            message = message.decode()
+            message = json.loads(message.decode())
 
             # Compute
             result = self.func(message)
 
+            # Serialize
+            result = json.dumps(result).encode()
+
             # Send
             self.socket.send_multipart([
                 id,
-                str(result).encode()
+                result
             ])
 
             message_id += 1

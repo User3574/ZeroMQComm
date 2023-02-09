@@ -1,4 +1,5 @@
 import zmq
+import json
 from typing import List
 
 
@@ -32,7 +33,7 @@ class Client:
 
                 # Decode
                 message_id = int(message_id.decode())
-                message = message.decode()
+                message = json.loads(message.decode())
 
                 # Append
                 results[message_id] = message

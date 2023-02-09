@@ -2,7 +2,7 @@ import zmq
 
 
 class Worker:
-    def __init__(self, func, port:int=5560):
+    def __init__(self, func, port: int = 5560):
         self.context = zmq.Context()
         self.socket = self.context.socket(zmq.DEALER)
         self.address = f"tcp://localhost:{port}"
@@ -16,7 +16,6 @@ class Worker:
             id, message = self.socket.recv_multipart()
 
             # Decode
-            id = id.decode()
             message = message.decode()
 
             # Compute
@@ -24,7 +23,7 @@ class Worker:
 
             # Send
             self.socket.send_multipart([
-                str(id).encode(),
+                id,
                 str(result).encode()
             ])
 

@@ -1,23 +1,23 @@
-import tqdm as tqdm
 import zmq
-import numpy as np
-from utils import send_array
-from numpy import random
+from typing import List
 
 
 class Client:
-    def __init__(self, addr="tcp://localhost:5559", port=8192):
+    def __init__(self, port: int = 5559, watermark: int = 8192):
         self.context = zmq.Context()
         self.socket = self.context.socket(zmq.DEALER)
 
-        self.socket.set(zmq.SNDHWM, port)
-        self.socket.set(zmq.RCVHWM, port)
-        self.socket.connect(addr)
+        self.socket.set(zmq.SNDHWM, watermark)
+        self.socket.set(zmq.RCVHWM, watermark)
+
+        self.address = f"tcp://localhost:{port}"
+        self.socket.connect(self.address)
 
         self.poller = zmq.Poller()
+
+    def compute(self, array: List[bytes]):
         self.poller.register(self.socket, zmq.POLLIN | zmq.POLLOUT)
 
-    def compute(self, array):
         msg_send = 0
         msg_received = 0
         msg_count = len(array)
@@ -47,21 +47,12 @@ class Client:
                 # Send until all messages are sent
                 self.socket.send_multipart([
                     str(msg_send).encode(),
-                    array[msg_send].encode()
+                    array[msg_send]
                 ])
                 msg_send += 1
                 if msg_send == msg_count:
                     self.poller.modify(self.socket, zmq.POLLIN)
 
-        return results
-
-
-if __name__ == '__main__':
-    client = Client()
-
-    # Create dummy array
-    msg_count = 100
-    array = ["A" * x for x in range(msg_count)]
-
-    results = client.compute(array)
-    print(results)
+        # Sort by id
+        results = {key: value for key, value in sorted(results.items(), key=lambda item: int(item[0]))}
+        return list(results.values())

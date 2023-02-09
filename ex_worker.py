@@ -4,5 +4,8 @@ if __name__ == '__main__':
     def length(message):
         return len(message)
 
-    worker = worker.Worker(length)
+    def same(message):
+        return message
+
+    worker = worker.Worker(same)
     worker.run()

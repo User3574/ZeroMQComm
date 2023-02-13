@@ -4,10 +4,10 @@ import zmq
 
 
 class Worker:
-    def __init__(self, func, port: int = 5560):
+    def __init__(self, func, address="localhost", port: int = 5560):
         self.context = zmq.Context()
         self.socket = self.context.socket(zmq.DEALER)
-        self.address = f"tcp://localhost:{port}"
+        self.address = f"tcp://{address}:{port}"
         self.socket.connect(self.address)
         self.func = func
 

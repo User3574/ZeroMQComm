@@ -1,4 +1,4 @@
-from src import client
+from src.client import Client
 import json
 import time
 import click
@@ -7,7 +7,7 @@ import click
 @click.command()
 @click.option('--msg_count', default=100000, help='Amount of messages to send')
 def main(msg_count):
-    client = client.Client()
+    client = Client()
 
     # Create dummy array
     msg_count = 100000

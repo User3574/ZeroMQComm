@@ -33,4 +33,4 @@ class Worker:
             ])
 
             message_id += 1
-            print(f'Sending {message_id}')
+            #print(f'Sending {message_id}')

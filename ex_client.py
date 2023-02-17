@@ -12,4 +12,4 @@ if __name__ == '__main__':
     array = [json.dumps(x).encode() for x in array]
 
     results = client.compute(array)
-    print(results)
+    #print(results)

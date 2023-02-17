@@ -10,7 +10,6 @@ def main(msg_count):
     client = Client()
 
     # Create dummy array
-    msg_count = 100000
     array = [[x, x + 1] for x in range(msg_count)]
 
     # Serialize array
@@ -21,6 +20,7 @@ def main(msg_count):
     end = time.time()
 
     print(f'Computation time: {end - start} for messages: {msg_count}')
+    print(f'Cars per second: {msg_count/(end-start)}')
     # print(results)
 
 

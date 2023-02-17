@@ -1,5 +1,6 @@
 from src import client
 import json
+import time
 
 if __name__ == '__main__':
     client = client.Client()
@@ -11,5 +12,9 @@ if __name__ == '__main__':
     # Serialize array
     array = [json.dumps(x).encode() for x in array]
 
+    start = time.time()
     results = client.compute(array)
+    end = time.time()
+
+    print(f'Computation time: {end-start}')
     #print(results)

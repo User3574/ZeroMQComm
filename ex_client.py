@@ -5,7 +5,7 @@ import click
 
 
 @click.command()
-@click.option('--msg_count', default=100000, help='Amount of messages to send')
+@click.option('--msg_count', default=20, help='Amount of messages to send')
 def main(msg_count):
     client = Client()
 

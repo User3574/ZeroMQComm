@@ -1,5 +1,6 @@
 from src import worker
 import click
+import time
 
 
 @click.command()
@@ -9,6 +10,7 @@ def main(address):
         return len(message)
 
     def same(message):
+        time.sleep(1)
         return message
 
     w = worker.Worker(same, address=address)

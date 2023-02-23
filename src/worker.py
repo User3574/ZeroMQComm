@@ -1,5 +1,4 @@
 import json
-import time
 import zmq
 
 
@@ -13,7 +12,6 @@ class Worker:
 
     def run(self):
         message_id = 0
-	time.sleep(1)
         while True:
             id, message = self.socket.recv_multipart()
 

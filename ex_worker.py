@@ -10,6 +10,9 @@ def main(address):
         return len(message)
 
     def same(message):
+        return message
+
+    def sleep(message):
         time.sleep(1)
         return message
 

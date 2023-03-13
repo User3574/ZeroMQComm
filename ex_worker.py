@@ -5,8 +5,9 @@ import time
 
 @click.command()
 @click.option('--address', default='localhost', help='Client address')
-@click.option('--sleep_time', default=1, help='Sleep time amount')
-def main(address, sleep_time):
+@click.option('--port', default=5560, type=int, help='Client port')
+@click.option('--sleep_time', default=1, type=float, help='Sleep time amount')
+def main(address: str, port: int, sleep_time: float):
     def length(message):
         return len(message)
 
@@ -18,7 +19,7 @@ def main(address, sleep_time):
         time.sleep(sleep_time)
         return message
 
-    w = worker.Worker(same, address=address)
+    w = worker.Worker(same, address=address, port=port)
     w.run()
 
 

@@ -1,33 +1,12 @@
-input=$(echo $PBS_NODEFILE)
-ITER=0
-CLIENT=""
-MSG=""
+#!/bin/bash
+#PBS -qqexp
+#PBS -lselect=2,walltime=01:00:00
 
 WORK_DIR="/home/mac0491/ZeroMQComm"
-ENV_PATH="${WORK_DIR}/env"
-WORKERS_PER_NODE=$1
-SLEEP_TIME=$2
-MSG_COUNT=$3
 
-while IFS= read -r line; do
-if test $ITER -gt 0
-then
-        ssh -n -f ${line} "
-        cd ${WORK_DIR}
-        source ${ENV_PATH}/bin/activate
-        for (( i=1; i<=${WORKERS_PER_NODE}; i++ ))
-        do
-            python3 ex_worker.py --address ${CLIENT} --sleep_time ${SLEEP_TIME} &
-        done
-        wait
-" 
-else
-	CLIENT=${line}
-fi
-ITER=$(expr $ITER + 1)
-done < ${input}
+ml Python/3.8.6-GCCcore-10.2.0
 
-# Run client
 cd ${WORK_DIR}
-source ${ENV_PATH}/bin/activate
-python ex_client.py --msg_count ${MSG_COUNT}
+source env/bin/activate
+
+python3 run.py

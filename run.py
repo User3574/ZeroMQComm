@@ -1,16 +1,27 @@
+from collections import defaultdict
+from contextlib import closing
+from dataclasses import dataclass
+import itertools
+import logging
+from pathlib import Path
+import socket
 import subprocess
 import os
-from cluster import cluster
+from typing import List
+import time
+import json
+
+from cluster.cluster import Cluster, start_process
+import pandas as pd
+from src.client import Client
 
 
-def check_pid(pid):
-    """ Check For the existence of a unix pid. """
-    try:
-        os.kill(pid, 0)
-    except OSError:
-        return False
-    else:
-        return True
+WORK_DIR = Path(os.getcwd()).absolute()
+# Virtual env is taken from whoever is running this script
+ENV_PATH = os.environ["VIRTUAL_ENV"]
+PYTHON_MODULE = "Python/3.8.6-GCCcore-10.2.0"
+
+WORKER_DIR = WORK_DIR / "workers"
 
 
 def kill_process(hostname: str, pid: int, signal="TERM"):
@@ -41,43 +52,80 @@ def kill_process(hostname: str, pid: int, signal="TERM"):
     return True
 
 
-def run(hosts: list, sleep_time: float, msg_count: int, workers_per_node: int):
-    CLIENT = hosts[0]
-    workers = []
+def get_pbs_nodes() -> List[str]:
+    with open(os.environ["PBS_NODEFILE"]) as f:
+        return list(l.strip() for l in f)
+
+
+@dataclass
+class RunResult:
+    duration: float
+
+
+def find_free_port() -> int:
+    with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as s:
+        s.bind(("", 0))
+        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        return s.getsockname()[1]
+
+
+def run(hosts: List[str], sleep_time: float, msg_count: int, workers_per_node: int) -> RunResult:
+    port = find_free_port()
+    client = Client(port=port)
+
+    CLIENT_ADDRESS = hosts[0]
+    cluster_data = Cluster(str(WORK_DIR))
 
     for i, host in enumerate(hosts[1:]):
         for i in range(workers_per_node):
-            workers.append(cluster.start_process(
-                commands=[f"python3 ex_worker.py --address {CLIENT} --sleep_time {sleep_time}"],
-                pyenv=f"{ENV_PATH}",
+            worker_dir = WORKER_DIR / f"worker_{i}"
+            worker_dir.mkdir(parents=True, exist_ok=True)
+            process = start_process(
+                commands=[f"python3 {WORK_DIR}/ex_worker.py --address {CLIENT_ADDRESS} --port {port} --sleep_time {sleep_time}"],
+                workdir=str(worker_dir),
+                pyenv=str(ENV_PATH),
+                modules=[PYTHON_MODULE],
                 hostname=host,
                 name=f"worker_{i}"
-            ))
-    
-    p = subprocess.Popen([f"python ex_client.py --msg_count {msg_count}"], stdout=subprocess.PIPE, shell=True)
-    out, err = p.communicate()
-    p.wait()
-    print(str(out, 'utf-8'))
-            
-    # Wait on client process
-    for worker in workers:
-        kill_process(worker.hostname, worker.pid)
-    
+            )
+            cluster_data.add(process)
 
-WORK_DIR = "/home/mac0491/ZeroMQComm"
-ENV_PATH = f"{WORK_DIR}/env"
+    # Wait for workers to be spawned
+    time.sleep(10)
 
-p = subprocess.Popen(['echo $PBS_NODEFILE'], shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-file = str(p.stdout.read().splitlines()[0], 'utf-8')
+    array = [[x, x + 1] for x in range(msg_count)]
+    array = [json.dumps(x).encode() for x in array]
 
-f = open(file, "r")
-hosts = f.read().splitlines()
+    start = time.time()
+    results = client.compute(array)
+    end = time.time()
 
-sleep_times = [0.1] #1
-msg_counts = [1000]
-workers_per_nodes = [1,2,4,8,16,32,64,128,256]
-for sleep_time in sleep_times:
-    for workers_per_node in workers_per_nodes:
-        for msg_count in msg_counts:
-            print(f"Sleep: {sleep_time}, Workers: {workers_per_node}, Messages: {msg_count}")
-            run(hosts, sleep_time, msg_count, workers_per_node)
+    duration = end - start
+    print(f'Computation time: {duration} for messages: {msg_count}')
+    print(f'Cars per second: {msg_count/(duration)}')
+
+    cluster_data.kill()
+    return RunResult(duration=duration)
+
+
+if __name__ == "__main__":
+    logging.basicConfig(level=logging.DEBUG,
+                        format="%(asctime)s %(module)s:%(levelname)s %(message)s")
+
+    pbs_nodes = get_pbs_nodes()
+
+    sleep_times = [0.001, 0.1, 1]
+    msg_counts = [100, 500]#, 10000]
+    workers_per_nodes = [1, 2, 4, 8, 16]#, 32, 64, 128, 256]
+
+    data = defaultdict(list)
+    for (sleep_time, msg_count, workers_per_node) in itertools.product(sleep_times, msg_counts, workers_per_nodes):
+        print(f"Sleep: {sleep_time}, Workers: {workers_per_node}, Messages: {msg_count}")
+        result = run(pbs_nodes, sleep_time, msg_count, workers_per_node)
+        data["program-runtime"].append(sleep_time)
+        data["workers"].append(workers_per_node)
+        data["msg-count"].append(msg_count)
+        data["duration"].append(result.duration)
+
+    df = pd.DataFrame(data)
+    df.to_csv("results.csv", index=False)

@@ -60,6 +60,8 @@ def get_pbs_nodes() -> List[str]:
 @dataclass
 class RunResult:
     duration: float
+    op_per_sec: float
+    optimal: float
 
 
 def find_free_port() -> int:
@@ -105,7 +107,7 @@ def run(hosts: List[str], sleep_time: float, msg_count: int, workers_per_node: i
     print(f'Cars per second: {msg_count/(duration)}')
 
     cluster_data.kill()
-    return RunResult(duration=duration)
+    return RunResult(duration=duration, op_per_sec=msg_count/duration, optimal=(sleep_time*msg_count)/(workers_per_node*(len(hosts)-1)))
 
 
 if __name__ == "__main__":
@@ -115,8 +117,8 @@ if __name__ == "__main__":
     pbs_nodes = get_pbs_nodes()
 
     sleep_times = [0.001, 0.1, 1]
-    msg_counts = [100, 500]#, 10000]
-    workers_per_nodes = [1, 2, 4, 8, 16]#, 32, 64, 128, 256]
+    msg_counts = [100, 500, 1000]
+    workers_per_nodes = [1, 2, 4, 8, 16, 32, 64, 128, 256]
 
     data = defaultdict(list)
     for (sleep_time, msg_count, workers_per_node) in itertools.product(sleep_times, msg_counts, workers_per_nodes):
@@ -126,6 +128,8 @@ if __name__ == "__main__":
         data["workers"].append(workers_per_node)
         data["msg-count"].append(msg_count)
         data["duration"].append(result.duration)
+        data["op-per-sec"].append(result.op_per_sec)
+        data["optimal"].append(result.optimal)
 
     df = pd.DataFrame(data)
     df.to_csv("results.csv", index=False)
